@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { UIManager, Platform, View, Text, Alert } from "react-native";
+import { AppState,UIManager, Platform, View, Text, Alert } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import i18n from "./lib/i18n";
@@ -27,6 +27,9 @@ import Settings from "./pages/Settings";
 import About from "./pages/About";
 
 import { LightThemeTokens, DarkThemeTokens } from "./assets/theme/tokens";
+
+import * as FileSystem from 'expo-file-system';
+
 const Stack = createNativeStackNavigator();
 
 if (Platform.OS === "android") {
@@ -52,6 +55,25 @@ export default function App() {
     "iA Writer Quattro Italic": require("./assets/fonts/iAWriterQuattroS-Italic.ttf"),
     "iA Writer Quattro": require("./assets/fonts/iAWriterQuattroS-Regular.ttf"),
   });
+  var [appState, setAppState] = React.useState(AppState.currentState);
+  var handleAppStateChange = (nextAppState) => {
+    if (nextAppState !== 'active') {
+      const analysisData = J$.analysis.endExecution();
+      FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'DCG.json', JSON.stringify(analysisData)).then(()=>{
+        alert('DCG written to '+ FileSystem.documentDirectory + 'DCG.json')
+      }).catch((e)=>{
+          alert(e)
+      });
+    }
+  }
+  
+  useEffect(() => {
+    AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      AppState.removeEventListener('change', handleAppStateChange);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
